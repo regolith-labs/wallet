@@ -1,43 +1,66 @@
-use std::fmt::Display;
-
 use keyring::Entry;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use solana_sdk::signature::Keypair;
 
 use crate::error::Error;
 
-const SERVICE_NAME: &str = "ore-app-xyzz";
-const USER: &str = "ore-user-xyzz";
+const SERVICE_MULTISIG: &str = "ore-app-xyz-multisig";
+const USER: &str = "ore-user-xyz";
+
+/// embeded keypair on device.
+/// field names from sqauds multisig api.
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Multisig {
+    /// signer embeded on this device
+    #[serde(serialize_with = "serialize", deserialize_with = "deserialize")]
+    pub creator: Keypair,
+    /// ephemeral keypair used to seed multisig pda
+    /// persisted to derive pda
+    #[serde(serialize_with = "serialize", deserialize_with = "deserialize")]
+    pub create_key: Keypair,
+}
 
 fn set(secret: &[u8]) -> Result<(), Error> {
-    let keyring = Entry::new(SERVICE_NAME, USER)?;
+    let keyring = Entry::new(SERVICE_MULTISIG, USER)?;
     keyring.set_secret(secret).map_err(From::from)
 }
 
-fn get() -> Result<PrettyKeypair, Error> {
-    let keyring = Entry::new(SERVICE_NAME, USER)?;
+fn get() -> Result<Multisig, Error> {
+    let keyring = Entry::new(SERVICE_MULTISIG, USER)?;
     let secret = keyring.get_secret()?;
-    let keypair = Keypair::from_bytes(secret.as_slice()).map_err(|err| {
+    let multisig = bincode::deserialize(secret.as_slice()).map_err(|err| {
         println!("{:?}", err);
-        crate::error::Error::Ed25519
+        Error::BincodeDeserialize
     })?;
-    Ok(PrettyKeypair(keypair))
+    Ok(multisig)
 }
 
-pub fn get_or_set() -> Result<PrettyKeypair, Error> {
+pub fn get_or_set() -> Result<Multisig, Error> {
     match get() {
         ok @ Ok(_) => ok,
         Err(err) => {
-            let keypair = Keypair::new();
-            set(keypair.to_bytes().as_slice())?;
-            Ok(PrettyKeypair(keypair))
+            let creator = Keypair::new();
+            let create_key = Keypair::new();
+            let multisig = Multisig {
+                creator,
+                create_key,
+            };
+            let bytes = bincode::serialize(&multisig).map_err(|err| {
+                println!("{:?}", err);
+                Error::BincodeSerialize
+            })?;
+            set(bytes.as_slice())?;
+            Ok(multisig)
         }
     }
 }
 
-pub struct PrettyKeypair(pub Keypair);
+fn serialize<S: Serializer>(keypair: &Keypair, serializer: S) -> Result<S::Ok, S::Error> {
+    let bytes = keypair.to_bytes();
+    serializer.serialize_bytes(&bytes)
+}
 
-impl Display for PrettyKeypair {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.0)
-    }
+fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Keypair, D::Error> {
+    let bytes: &[u8] = <&[u8]>::deserialize(deserializer)?;
+    Keypair::from_bytes(bytes).map_err(|_| serde::de::Error::custom("invalid keypair bytes"))
 }

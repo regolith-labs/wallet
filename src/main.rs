@@ -4,7 +4,7 @@ mod signer;
 mod smart_account;
 
 use dioxus::prelude::*;
-use signer::PrettyKeypair;
+use signer::Multisig;
 use solana_sdk::{signature::Keypair, signer::Signer};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -26,22 +26,25 @@ fn App() -> Element {
 
 #[component]
 fn SignerCmp() -> Element {
-    let mut signer: Signal<Option<PrettyKeypair>> = use_signal(|| None);
+    let mut signer: Signal<Option<Multisig>> = use_signal(|| None);
     let mut signer_string = use_signal(|| "no keypair".to_string());
     use_effect(move || {
-        if let Some(signer) = &*signer.read() {
-            signer_string.set(signer.0.pubkey().to_string());
+        if let Some(multisig) = &*signer.read() {
+            signer_string.set(multisig.creator.pubkey().to_string());
         }
     });
-    use_effect(move || {
-        if let Ok(keypair) = crate::signer::get_or_set() {
-            let keypair_ = keypair.0.insecure_clone();
-            signer.set(Some(keypair));
-            spawn(async move {
-                let res = smart_account::create_smart_account(keypair_).await;
-                println!("{:?}", res);
-            });
+    let _ = use_resource(move || async move {
+        if let Some(multisig) = &*signer.read() {
+            match smart_account::get_or_create(multisig).await {
+                Ok(multisig) => {
+                    println!("{:?}", multisig.create_key);
+                }
+                Err(err) => {
+                    println!("{:?}", err);
+                }
+            }
         }
+        Ok::<(), crate::error::Error>(())
     });
     rsx! {
         div {

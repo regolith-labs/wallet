@@ -6,9 +6,32 @@ use squads_multisig::state::{Member, Permission, Permissions};
 
 use crate::error::Error;
 use crate::gateway::Gateway;
+use crate::signer::Multisig;
 
-pub async fn create_smart_account(signer: Keypair) -> Result<(), Error> {
+pub async fn get_or_create(multisig: &Multisig) -> Result<squads_multisig::state::Multisig, Error> {
     let gateway = Gateway::new();
+    // look for existing onchain account
+    if let Ok(data) = get(&gateway, multisig).await {
+        return Ok(data);
+    }
+    // or create new one
+    create(&gateway, multisig).await?;
+    let data = get(&gateway, multisig).await?;
+    Ok(data)
+}
+
+async fn get(
+    gateway: &Gateway,
+    multisig: &Multisig,
+) -> Result<squads_multisig::state::Multisig, Error> {
+    let (multisig_pda, _) =
+        squads_multisig::pda::get_multisig_pda(&multisig.create_key.pubkey(), None);
+    let data = gateway.rpc_client.get_account_data(&multisig_pda).await?;
+    let data = squads_multisig::state::Multisig::try_deserialize(&mut data.as_slice())?;
+    Ok(data)
+}
+
+async fn create(gateway: &Gateway, multisig: &Multisig) -> Result<(), Error> {
     // program config
     let (program_config_pda, _) = squads_multisig::pda::get_program_config_pda(None);
     let program_config_data = gateway
@@ -21,17 +44,16 @@ pub async fn create_smart_account(signer: Keypair) -> Result<(), Error> {
         )?;
     // treasury
     let treasury = program_config.treasury;
-    // ephemeral create key
-    let create_key = Keypair::new();
     // multisig
-    let (multisig_pda, _) = squads_multisig::pda::get_multisig_pda(&create_key.pubkey(), None);
+    let (multisig_pda, _) =
+        squads_multisig::pda::get_multisig_pda(&multisig.create_key.pubkey(), None);
     // create accounts
     let accounts = squads_multisig::client::MultisigCreateAccountsV2 {
         program_config: program_config_pda,
         treasury,
         multisig: multisig_pda,
-        create_key: create_key.pubkey(),
-        creator: signer.pubkey(),
+        create_key: multisig.create_key.pubkey(),
+        creator: multisig.creator.pubkey(),
         system_program: solana_sdk::system_program::ID,
     };
     // args
@@ -39,21 +61,21 @@ pub async fn create_smart_account(signer: Keypair) -> Result<(), Error> {
         config_authority: None,
         threshold: 1,
         members: vec![Member {
-            key: signer.pubkey(),
+            key: multisig.creator.pubkey(),
             permissions: Permissions::from_vec(
                 (vec![Permission::Initiate, Permission::Vote, Permission::Execute]).as_slice(),
             ),
         }],
         time_lock: 0,
-        rent_collector: Some(signer.pubkey()),
+        rent_collector: Some(multisig.creator.pubkey()),
         memo: None,
     };
     // instruction
     let ix = squads_multisig::client::multisig_create_v2(accounts, args, None);
     // transaction
-    let mut tx = Transaction::new_with_payer(&[ix], Some(&signer.pubkey()));
+    let mut tx = Transaction::new_with_payer(&[ix], Some(&multisig.creator.pubkey()));
     let hash = gateway.rpc_client.get_latest_blockhash().await?;
-    tx.sign(&[&signer, &create_key], hash);
+    tx.sign(&[&multisig.creator, &multisig.create_key], hash);
     // submit
     let sig = gateway.rpc_client.send_transaction(&tx).await?;
     println!("{:?}", sig);

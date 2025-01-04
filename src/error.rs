@@ -3,7 +3,8 @@ pub enum Error {
     Keyring,
     SolanaClient,
     AnchorDeserialize,
-    Ed25519,
+    BincodeDeserialize,
+    BincodeSerialize,
 }
 
 impl From<keyring::Error> for Error {

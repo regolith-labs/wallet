@@ -7915,8 +7915,10 @@ dependencies = [
 name = "wallet"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "dioxus",
  "keyring",
+ "serde",
  "solana-client",
  "solana-sdk",
  "squads-multisig",
