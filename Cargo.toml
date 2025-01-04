@@ -11,6 +11,7 @@ dioxus = { version = "0.6.0", features = [] }
 keyring = { version = "3.6.1", features = ["apple-native", "windows-native"] }
 solana-client = "1.18"
 solana-sdk = "1.18"
+squads-multisig = "2.0.1"
 
 [features]
 default = ["desktop"]
