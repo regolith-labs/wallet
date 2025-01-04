@@ -1,12 +1,12 @@
 [application]
 
 # App (Project) Name
-name = "dx-native"
+name = "wallet"
 
 [web.app]
 
 # HTML title tag content
-title = "dx-native"
+title = "wallet"
 
 # include `assets` in web platform
 [web.resource]

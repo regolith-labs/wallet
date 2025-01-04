@@ -1,5 +1,5 @@
 [package]
-name = "dx-native"
+name = "wallet"
 version = "0.1.0"
 authors = ["alex <aabinaei@gmail.com>"]
 edition = "2021"
