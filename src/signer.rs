@@ -38,7 +38,7 @@ fn get() -> Result<Multisig, Error> {
 pub fn get_or_set() -> Result<Multisig, Error> {
     match get() {
         ok @ Ok(_) => ok,
-        Err(err) => {
+        Err(_err) => {
             let creator = Keypair::new();
             let create_key = Keypair::new();
             let multisig = Multisig {

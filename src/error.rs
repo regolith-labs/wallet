@@ -1,10 +1,26 @@
 #[derive(Debug)]
 pub enum Error {
-    Keyring,
-    SolanaClient,
     AnchorDeserialize,
     BincodeDeserialize,
     BincodeSerialize,
+    Keyring,
+    SolanaClient,
+    SquadsCompileTransaction,
+    SquadsClientError,
+}
+
+impl From<squads_multisig::error::ClientError> for Error {
+    fn from(value: squads_multisig::error::ClientError) -> Self {
+        println!("{:?}", value);
+        Self::SquadsClientError
+    }
+}
+
+impl From<squads_multisig::solana_program::message::CompileError> for Error {
+    fn from(value: squads_multisig::solana_program::message::CompileError) -> Self {
+        println!("{:?}", value);
+        Self::SquadsCompileTransaction
+    }
 }
 
 impl From<keyring::Error> for Error {

@@ -30,7 +30,9 @@ fn SignerCmp() -> Element {
     let mut signer_string = use_signal(|| "no keypair".to_string());
     use_effect(move || {
         if let Some(multisig) = &*signer.read() {
-            signer_string.set(multisig.creator.pubkey().to_string());
+            let vault = smart_account::vault(multisig);
+            let out = format!("pubkey:{:?}-vault:{:?}", multisig.creator.pubkey(), vault);
+            signer_string.set(out);
         }
     });
     let _ = use_resource(move || async move {
@@ -45,6 +47,18 @@ fn SignerCmp() -> Element {
             }
         }
         Ok::<(), crate::error::Error>(())
+    });
+    let _ = use_resource(move || async move {
+        if let Some(multisig) = &*signer.read() {
+            match smart_account::dummy(multisig).await {
+                Ok(_) => {
+                    println!("ok ok");
+                }
+                Err(err) => {
+                    println!("{:?}", err);
+                }
+            }
+        }
     });
     rsx! {
         div {
