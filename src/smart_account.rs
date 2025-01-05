@@ -67,12 +67,16 @@ pub async fn transaction(multisig: &Multisig, instructions: Vec<Instruction>) ->
         transaction_pda,
         &transaction_message,
     )?;
+    // close proposal
+    let close_proposal_instruction =
+        close_proposal(multisig, multisig_pda, proposal_pda, transaction_pda);
     // transaction
     for ix in create_proposal_instructions.into_iter() {
         proposal_instructions.push(ix);
     }
     proposal_instructions.push(approve_proposal_instruction);
     proposal_instructions.push(execute_proposal_instruction);
+    proposal_instructions.push(close_proposal_instruction);
     let mut tx = Transaction::new_with_payer(
         proposal_instructions.as_slice(),
         Some(&multisig.creator.pubkey()),
@@ -81,6 +85,22 @@ pub async fn transaction(multisig: &Multisig, instructions: Vec<Instruction>) ->
     tx.sign(&[&multisig.creator], hash);
     let sig = gateway.rpc_client.send_transaction(&tx).await?;
     Ok(())
+}
+
+fn close_proposal(
+    multisig: &Multisig,
+    multisig_pda: Pubkey,
+    proposal_pda: Pubkey,
+    transaction_pda: Pubkey,
+) -> Instruction {
+    let accounts = squads_multisig::client::VaultTransactionAccountsCloseAccounts {
+        multisig: multisig_pda,
+        proposal: proposal_pda,
+        transaction: transaction_pda,
+        rent_collector: multisig.creator.pubkey(),
+        system_program: solana_sdk::system_program::ID,
+    };
+    squads_multisig::client::vault_transaction_accounts_close(accounts, None)
 }
 
 fn execute_proposal(
