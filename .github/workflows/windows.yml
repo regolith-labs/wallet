@@ -1,0 +1,30 @@
+name: Build and Package (Windows)
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          profile: minimal
+          override: true
+
+      - name: Install cargo-packager and dioxus-cli
+        run: |
+          cargo install cargo-packager dioxus-cli
+
+      - name: Build and Package
+        env:
+          CARGO_PACKAGER_SIGN_PRIVATE_KEY: ${{ secrets.CARGO_PACKAGER_SIGN_PRIVATE_KEY }}
+          CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD: ${{ secrets.CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD }}
+        run: |
+          cargo packager --release
