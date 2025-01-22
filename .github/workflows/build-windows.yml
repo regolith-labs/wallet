@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022-xlarge
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -51,13 +51,13 @@ jobs:
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # Usually you want to use the pushed tag as the release version
           tag_name: ${{ github.ref }}
           release_name: wallet-${{ github.ref }}
           draft: false
           prerelease: false
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       # Upload the .exe file
       - name: Upload EXE to Release
