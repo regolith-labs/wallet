@@ -40,4 +40,4 @@ before-packaging-command = "dx build --platform desktop --release"
 out-dir = "./dist"
 product-name = "ORE XYZ"
 identifier = "app.ore.supply"
-resources = ["src/**/*", "assets", "Cargo.toml", "README.md"]
+resources = ["assets"]

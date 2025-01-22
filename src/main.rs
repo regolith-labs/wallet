@@ -1,6 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-#![allow(non_snake_case)]
+// #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// #![allow(non_snake_case)]
 
 mod error;
 mod gateway;
@@ -16,6 +16,7 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 const HEADER_SVG: Asset = asset!("/assets/header.svg");
 
 fn main() {
+    println!("{:?}", FAVICON);
     dioxus::launch(App);
 }
 

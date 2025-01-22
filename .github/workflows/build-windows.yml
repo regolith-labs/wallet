@@ -39,7 +39,7 @@ jobs:
 
       - name: Install cargo-packager and dioxus-cli
         run: |
-          cargo install cargo-packager dioxus-cli
+          cargo install cargo-packager@0.11.3 dioxus-cli@0.6.1
 
       - name: Build and Package
         env:
