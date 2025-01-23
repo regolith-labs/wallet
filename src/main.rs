@@ -18,8 +18,10 @@ const HEADER_SVG: Asset = asset!("/assets/header.svg");
 
 fn main() {
     println!("{:?}", FAVICON);
-    let pkg_name = env!("CARGO_PKG_NAME");
-    println!("{:?}", pkg_name);
+    let update = updater::updater();
+    if let Err(err) = update {
+        println!("{:?}", err);
+    }
     dioxus::launch(App);
 }
 

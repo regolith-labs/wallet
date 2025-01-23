@@ -6,13 +6,37 @@ pub enum Error {
     Keyring,
     SolanaClient,
     SquadsCompileTransaction,
-    SquadsClientError,
+    SquadsClient,
+    UpdaterFetch,
+    UpdaterParseUrl,
+    SemverParse,
+}
+
+impl From<cargo_packager_updater::Error> for Error {
+    fn from(value: cargo_packager_updater::Error) -> Self {
+        println!("{:?}", value);
+        Self::UpdaterFetch
+    }
+}
+
+impl From<cargo_packager_updater::semver::Error> for Error {
+    fn from(value: cargo_packager_updater::semver::Error) -> Self {
+        println!("{:?}", value);
+        Self::SemverParse
+    }
+}
+
+impl From<cargo_packager_updater::url::ParseError> for Error {
+    fn from(value: cargo_packager_updater::url::ParseError) -> Self {
+        println!("{:?}", value);
+        Self::UpdaterParseUrl
+    }
 }
 
 impl From<squads_multisig::error::ClientError> for Error {
     fn from(value: squads_multisig::error::ClientError) -> Self {
         println!("{:?}", value);
-        Self::SquadsClientError
+        Self::SquadsClient
     }
 }
 
