@@ -19,7 +19,7 @@ jobs:
       VERSION: ${{ github.ref_name }}
       ## aws publish constants
       AWS_REGION: us-east-1
-      S3_BUCKET_NAME: my-awesome-public-bucket
+      S3_BUCKET_NAME: ore-wallet-xyz
 
     steps:
       - name: Check out code
