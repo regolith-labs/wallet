@@ -11,6 +11,16 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
+    
+    env:
+      ## build constants
+      TARGET: windows
+      ARCH: x64
+      VERSION: ${{ github.ref_name }}
+      ## aws publish constants
+      AWS_REGION: us-east-1
+      S3_BUCKET_NAME: my-awesome-public-bucket
+
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -49,37 +59,27 @@ jobs:
           cargo packager --release
 
       # ------------------------------------------
-      # Create a release and upload artifacts
+      # Configure AWS credentials & upload to S3
       # ------------------------------------------
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
         with:
-          tag_name: ${{ github.ref }}
-          release_name: wallet-${{ github.ref }}
-          draft: false
-          prerelease: false
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      # Upload the .exe file
-      - name: Upload EXE to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/wallet_${{ github.ref_name }}_x64-setup.exe
-          asset_name: wallet_${{ github.ref_name }}_x64-setup.exe
-          asset_content_type: application/octet-stream
+      - name: Upload EXE to S3
+        run: |
+          aws s3 cp \
+            "dist/wallet_${{ env.VERSION }}_x64-setup.exe" \
+            "s3://${{ env.S3_BUCKET_NAME }}/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64-setup.exe"
 
-      # Upload the .sig file
-      - name: Upload Signature to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/wallet_${{ github.ref_name }}_x64-setup.exe.sig
-          asset_name: wallet_${{ github.ref_name }}_x64-setup.exe.sig
-          asset_content_type: application/octet-stream
+      - name: Upload Signature to S3
+        run: |
+          aws s3 cp \
+            "dist/wallet_${{ env.VERSION }}_x64-setup.exe.sig" \
+            "s3://${{ env.S3_BUCKET_NAME }}/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64-setup.exe.sig"
+
+      - name: Print S3 download link
+        run: |
+          echo "Download EXE at: https://${{ env.S3_BUCKET_NAME }}.s3.amazonaws.com/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64-setup.exe"

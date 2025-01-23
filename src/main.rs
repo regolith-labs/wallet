@@ -6,6 +6,7 @@ mod error;
 mod gateway;
 mod signer;
 mod smart_account;
+mod updater;
 
 use dioxus::prelude::*;
 use signer::Multisig;
@@ -17,6 +18,8 @@ const HEADER_SVG: Asset = asset!("/assets/header.svg");
 
 fn main() {
     println!("{:?}", FAVICON);
+    let pkg_name = env!("CARGO_PKG_NAME");
+    println!("{:?}", pkg_name);
     dioxus::launch(App);
 }
 
