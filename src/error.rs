@@ -7,7 +7,7 @@ pub enum Error {
     SolanaClient,
     SquadsCompileTransaction,
     SquadsClient,
-    UpdaterFetch,
+    Updater,
     UpdaterParseUrl,
     SemverParse,
 }
@@ -15,7 +15,7 @@ pub enum Error {
 impl From<cargo_packager_updater::Error> for Error {
     fn from(value: cargo_packager_updater::Error) -> Self {
         println!("{:?}", value);
-        Self::UpdaterFetch
+        Self::Updater
     }
 }
 

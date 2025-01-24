@@ -4,8 +4,10 @@ use crate::error::Error;
 
 pub fn updater() -> Result<(), Error> {
     // releases endpoint
-    let endpoint = "https://ore-wallet-xyz.s3.us-east-1.amazonaws.com";
+    let endpoint = "http://localhost:3000/app/update/{{target}}/{{arch}}/{{current_version}}";
+    println!("{}", endpoint);
     let endpoint = Url::parse(endpoint)?;
+    println!("{:?}", endpoint);
     // signer pubkey
     let pubkey = String::from("dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE1RkFDQUFCQ0M0NDhBRTQKUldUa2lrVE1xOHI2cGJSaXdCS0NVWGdBQTYzSGFNTXlBRlc5NThYVFhwUEVab29UaGpiSk1WWloK");
     // config
@@ -20,6 +22,7 @@ pub fn updater() -> Result<(), Error> {
     // check for update
     let update = cargo_packager_updater::check_update(current_version, config)?;
     if let Some(update) = update {
+        println!("update: {:?}", update);
         update.download_and_install()?;
         println!("update installed");
     } else {
