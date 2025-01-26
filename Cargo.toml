@@ -9,7 +9,7 @@ bincode = "1.3.3"
 cargo-packager-updater = { version = "0.2.2", default-features = false, features = [
   "native-tls",
 ] }
-dioxus = { version = "0.6.0", features = [] }
+dioxus = { version = "0.6.2", features = [] }
 keyring = { version = "3.6.1", features = ["apple-native", "windows-native"] }
 serde = { version = "1.0.217", features = ["derive"] }
 solana-client = "1.18"
@@ -34,10 +34,3 @@ inherits = "dev"
 
 [profile.android-dev]
 inherits = "dev"
-
-[package.metadata.packager]
-before-packaging-command = "dx bundle --platform desktop --release"
-out-dir = "./dist"
-product-name = "ORE XYZ"
-identifier = "app.ore.supply"
-resources = ["assets"]
