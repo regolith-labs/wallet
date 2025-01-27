@@ -68,7 +68,7 @@ jobs:
       - name: Upload EXE to S3
         run: |
           aws s3 cp `
-            "target/dx/wallet/bundle/windows/bundle/nsis/Wallet_${{ env.VERSION }}_x64-setup.exe" `
+            "target\dx\wallet\bundle\windows\bundle/nsis/Wallet_${{ env.VERSION }}_x64-setup.exe" `
             "s3://${{ env.S3_BUCKET_NAME }}/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64-setup.exe"
 
       ## - name: Upload Signature to S3
