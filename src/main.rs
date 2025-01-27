@@ -11,6 +11,7 @@ mod updater;
 use dioxus::prelude::*;
 use signer::Multisig;
 use solana_sdk::{signature::Keypair, signer::Signer};
+use updater::Updater;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -18,10 +19,6 @@ const HEADER_SVG: Asset = asset!("/assets/header.svg");
 
 fn main() {
     println!("{:?}", FAVICON);
-    let update = updater::updater();
-    if let Err(err) = update {
-        println!("{:?}", err);
-    }
     dioxus::launch(App);
 }
 
@@ -31,6 +28,7 @@ fn App() -> Element {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         Hero {}
+        Updater {}
     }
 }
 
