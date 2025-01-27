@@ -49,11 +49,18 @@ jobs:
 
       - name: Install dioxus-cli
         run: |
-          cargo install dioxus-cli@0.6.2
+          cargo install cargo-packager@0.11.3 dioxus-cli@0.6.2
 
       - name: Build and Package
         run: |
           dx bundle --platform desktop --release
+
+      - name: Sign
+        env:
+          CARGO_PACKAGER_SIGN_PRIVATE_KEY: ${{ secrets.CARGO_PACKAGER_SIGN_PRIVATE_KEY }}
+          CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD: ${{ secrets.CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD }}
+        run: |
+          cargo packager signer sign target\dx\wallet\bundle\windows\bundle/nsis/Wallet_${{ env.VERSION }}_x64-setup.exe 
 
       # ------------------------------------------
       # Configure AWS credentials & upload to S3
@@ -71,12 +78,12 @@ jobs:
             "target\dx\wallet\bundle\windows\bundle/nsis/Wallet_${{ env.VERSION }}_x64-setup.exe" `
             "s3://${{ env.S3_BUCKET_NAME }}/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64-setup.exe"
 
-      ## - name: Upload Signature to S3
-      ##   run: |
-      ##     aws s3 cp `
-      ##       "dist/wallet_${{ env.VERSION }}_x64-setup.exe.sig" `
-      ##       "s3://${{ env.S3_BUCKET_NAME }}/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64-setup.exe.sig"
+      - name: Upload Signature to S3
+        run: |
+          aws s3 cp `
+            "target\dx\wallet\bundle\windows\bundle/nsis/Wallet_${{ env.VERSION }}_x64-setup.exe.sig" `
+            "s3://${{ env.S3_BUCKET_NAME }}/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64-setup.exe.sig"
 
-      ## - name: Print S3 download link
-      ##   run: |
-      ##     echo "Download EXE at: https://${{ env.S3_BUCKET_NAME }}.s3.amazonaws.com/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64-setup.exe"
+      - name: Print S3 download link
+        run: |
+          echo "Download EXE at: https://${{ env.S3_BUCKET_NAME }}.s3.amazonaws.com/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64-setup.exe"
