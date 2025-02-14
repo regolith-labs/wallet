@@ -8114,7 +8114,7 @@ dependencies = [
 
 [[package]]
 name = "wallet"
-version = "0.0.1"
+version = "0.1.6"
 dependencies = [
  "bincode",
  "cargo-packager-updater",
