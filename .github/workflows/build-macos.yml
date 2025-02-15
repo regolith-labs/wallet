@@ -59,7 +59,7 @@ jobs:
       # 6) Build & Package
       - name: Build and Package
         run: |
-          dx bundle --platform desktop --release
+          dx bundle --platform desktop --package-types macos --release
           # This should produce a .app or .dmg depending on your config.
           # For example, you might see something like:
           # target/dx/wallet/bundle/macos/bundle/Wallet_x86_64.dmg
