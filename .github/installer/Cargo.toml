@@ -1,0 +1,12 @@
+[package]
+name = "dioxus-installer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Pin the CLI exactly to 0.6.2
+dioxus-cli = "=0.6.2"
+
+[patch.crates-io]
+# Force the subdependency dioxus-cli-config to stay at 0.6.2
+dioxus-cli-config = { version = "=0.6.2" }
