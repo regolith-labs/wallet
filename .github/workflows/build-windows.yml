@@ -47,19 +47,9 @@ jobs:
           profile: minimal
           override: true
 
-      # ==============================
-      # 1) Install cargo-packager
-      # ==============================
-      - name: Install cargo-packager
+      - name: Install dioxus-cli
         run: |
-          cargo install cargo-packager@0.11.3
-
-      # ==============================
-      # 2) Install pinned dioxus-cli from .github/installer
-      # ==============================
-      - name: Install pinned dioxus-cli
-        run: |
-          cargo install --path ./.github/installer
+          cargo install cargo-packager@0.11.3 dioxus-cli@0.6.3
 
       - name: Build and Package
         run: |
