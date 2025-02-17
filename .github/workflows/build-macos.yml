@@ -51,17 +51,25 @@ jobs:
           profile: minimal
           override: true
 
-      # 5) Install CLI tools
+      # 5) Add x86_64-apple-darwin target
+      - name: Add x86_64 Rust target
+        run: |
+          rustup target add x86_64-apple-darwin
+
+      # 6) Install CLI tools
       - name: Install dioxus-cli and cargo-packager
         run: |
           cargo install cargo-packager@0.11.3 dioxus-cli@0.6.3
 
-      # 6) Build & Package
+      # 7) Build & Package for x86_64
       - name: Build and Package
         run: |
-          dx bundle --platform desktop --package-types macos --release
+          # Force Cargo to build for x86_64-apple-darwin
+          # so dx bundle will produce x86_64 artifacts
+          CARGO_BUILD_TARGET=x86_64-apple-darwin \
+            dx bundle --platform desktop --package-types macos --release
 
-      # 7) Configure AWS credentials
+      # 8) Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
@@ -69,21 +77,23 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 8) Create tar.gz from the .app folder & upload to S3
+      # 9) Create tar.gz from the .app folder & upload to S3
       - name: Package and Upload
         run: |
           # Path to the .app bundle created by 'dx bundle'
           APP_DIR="/Users/runner/work/wallet/wallet/target/dx/wallet/bundle/macos/bundle/macos/Wallet.app"
 
           # Create a tar.gz archive of the .app directory
-          tar -czf "Wallet_${{ env.VERSION }}.app.tar.gz" -C "$(dirname "$APP_DIR")" "$(basename "$APP_DIR")"
+          tar -czf "Wallet_${{ env.VERSION }}.app.tar.gz" \
+            -C "$(dirname "$APP_DIR")" \
+            "$(basename "$APP_DIR")"
 
           # Upload that single tar.gz file to S3
           aws s3 cp \
             "Wallet_${{ env.VERSION }}.app.tar.gz" \
             "s3://${{ env.S3_BUCKET_NAME }}/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64.app.tar.gz"
 
-      # 9) Print S3 download link
+      # 10) Print S3 download link
       - name: Print S3 download link
         run: |
           echo "Download macOS artifact at:"
