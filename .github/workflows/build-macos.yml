@@ -72,7 +72,7 @@ jobs:
       # 8) Upload .app/.dmg/.zip to S3
       - name: Upload Artifact to S3
         run: |
-          SOURCE_PATH="target/dx/wallet/bundle/macos/bundle/Wallet.app"
+          SOURCE_PATH="/Users/runner/work/wallet/wallet/target/dx/wallet/bundle/macos/bundle/macos/Wallet.app"
 
           aws s3 cp \
             "$SOURCE_PATH" \
