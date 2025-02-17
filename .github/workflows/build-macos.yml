@@ -60,62 +60,25 @@ jobs:
       - name: Build and Package
         run: |
           dx bundle --platform desktop --package-types macos --release
-          # This should produce a .app or .dmg depending on your config.
-          # For example, you might see something like:
-          # target/dx/wallet/bundle/macos/bundle/Wallet_x86_64.dmg
-          #
-          # Adjust paths/commands as needed for your project’s structure.
 
-        ## # 7) (Optional) Code Sign
-        ## #
-        ## # On macOS, code signing typically requires a Developer ID certificate from Apple.
-        ## # If you have that .p12 stored as a base64-encoded GitHub Secret, you can import it here.
-        ## #
-        ## # This is a generic example using native macOS codesign:
-        ## - name: Import Apple Developer ID certificate
-        ##   if: env.MAC_SIGN == 'true'
-        ##   run: |
-        ##     # Only run if you want to code sign with Apple certs.
-        ##     # Replace the secret names with your actual secrets.
+      # 7) Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-        ##     echo "${{ secrets.APPLE_DEVELOPER_ID_P12_BASE64 }}" | base64 --decode > signing_certificate.p12
-        ##     security create-keychain -p "" build.keychain
-        ##     security unlock-keychain -p "" build.keychain
-        ##     security import signing_certificate.p12 \
-        ##       -k build.keychain \
-        ##       -P "${{ secrets.APPLE_DEVELOPER_ID_P12_PASSWORD }}" \
-        ##       -T /usr/bin/codesign \
-        ##       -T /usr/bin/productbuild
-        ##     security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+      # 8) Upload .app/.dmg/.zip to S3
+      - name: Upload Artifact to S3
+        run: |
+          SOURCE_PATH="target/dx/wallet/bundle/macos/bundle/Wallet.app"
 
-        ## - name: Sign App (Optional)
-        ##   if: env.MAC_SIGN == 'true'
-        ##   run: |
-        ##     # If you're using cargo-packager to do Mac code signing, you might do something like:
-        ##     # cargo packager signer sign path/to/YourApp.app
-        ##     #
-        ##     # Or if you prefer direct Apple codesign:
-        ##     # codesign --deep --force --verify --verbose \
-        ##     #   --sign "Developer ID Application: Your Company (TEAMID)" \
-        ##     #   path/to/YourApp.app
+          aws s3 cp \
+            "$SOURCE_PATH" \
+            "s3://${{ env.S3_BUCKET_NAME }}/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64.dmg"
 
-        ##     echo "Signing step placeholder - adjust for your actual signing approach."
-
-        ## # 8) Configure AWS credentials & upload artifact
-        ## - name: Configure AWS credentials
-        ##   uses: aws-actions/configure-aws-credentials@v3
-        ##   with:
-        ##     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        ##     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        ##     aws-region: ${{ env.AWS_REGION }}
-
-        ## - name: Upload DMG or ZIP to S3
-        ##   run: |
-        ##     # Example path - adjust for your actual build output
-        ##     aws s3 cp \
-        ##       "target/dx/wallet/bundle/macos/bundle/Wallet_${{ env.VERSION }}_x64.dmg" \
-        ##       "s3://${{ env.S3_BUCKET_NAME }}/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64.dmg"
-
-        ## - name: Print S3 download link
-        ##   run: |
-        ##     echo "Download DMG at: https://${{ env.S3_BUCKET_NAME }}.s3.amazonaws.com/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64.dmg"
+      # 9) Print S3 download link
+      - name: Print S3 download link
+        run: |
+          echo "Download macOS artifact at: https://${{ env.S3_BUCKET_NAME }}.s3.amazonaws.com/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64.dmg"
