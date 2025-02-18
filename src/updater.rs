@@ -34,7 +34,7 @@ pub fn Updater() -> Element {
                     }
                 }
             }
-            Some(Err(err)) => {
+            Some(Err(_err)) => {
                 rsx! {}
             }
             None => {
@@ -46,7 +46,7 @@ pub fn Updater() -> Element {
 
 enum State {
     AlreadyHaveLatest,
-    UpdateAvailable(Update, NewBinaryToInstall),
+    UpdateAvailable(Box<Update>, NewBinaryToInstall),
 }
 type NewBinaryToInstall = Vec<u8>;
 
@@ -73,7 +73,7 @@ fn updater() -> Result<State, Error> {
         println!("update: {:?}", update);
         // download
         let bytes = update.download()?;
-        Ok(State::UpdateAvailable(update, bytes))
+        Ok(State::UpdateAvailable(Box::new(update), bytes))
     } else {
         println!("no update available");
         Ok(State::AlreadyHaveLatest)

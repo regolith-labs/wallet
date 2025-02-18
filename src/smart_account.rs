@@ -83,7 +83,7 @@ pub async fn transaction(multisig: &Multisig, instructions: Vec<Instruction>) ->
     );
     let hash = gateway.rpc_client.get_latest_blockhash().await?;
     tx.sign(&[&multisig.creator], hash);
-    let sig = gateway.rpc_client.send_transaction(&tx).await?;
+    let _sig = gateway.rpc_client.send_transaction(&tx).await?;
     Ok(())
 }
 
