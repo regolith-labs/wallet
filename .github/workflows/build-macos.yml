@@ -93,7 +93,7 @@ jobs:
       - name: Code-sign .app
         run: |
           APP_DIR="/Users/runner/work/wallet/wallet/target/dx/wallet/bundle/macos/bundle/macos/Wallet.app"
-          codesign --deep --force --verify --verbose \
+          codesign --deep --force --verify --verbose --options runtime \
             --sign "Developer ID Application: $DEVID_NAME ($DEVID_TEAM_ID)" \
             "$APP_DIR"
         env:
@@ -115,41 +115,13 @@ jobs:
           /usr/bin/zip -r "$ZIP_FILE" "$APP_DIR"
       
           echo "Submitting to Apple Notary Service..."
-          SUBMISSION_ID=$(
-            xcrun notarytool submit "$ZIP_FILE" \
-              --apple-id "$NOTARIZE_APPLE_ID" \
-              --team-id "$DEVID_TEAM_ID" \
-              --password "$NOTARIZE_APP_PASSWORD" \
-              --verbose 2>&1 \
-            | awk '/id:/ {print $2; exit}'
-          )
-      
-          echo "Submission ID: $SUBMISSION_ID"
-          echo "Polling notarization status..."
-      
-          while true; do
-            STATUS=$(
-              xcrun notarytool history \
-                --apple-id "$NOTARIZE_APPLE_ID" \
-                --team-id "$DEVID_TEAM_ID" \
-                --password "$NOTARIZE_APP_PASSWORD" \
-                --output-format json \
-              | jq -r --arg SUB_ID "$SUBMISSION_ID" '.summaries[] | select(.id == $SUB_ID) | .status'
-            )
-      
-            echo "Current status: $STATUS"
-      
-            if [ "$STATUS" = "Accepted" ]; then
-              echo "Notarization succeeded!"
-              break
-            elif [ "$STATUS" = "Invalid" ]; then
-              echo "Notarization failed (status: Invalid)."
-              exit 1
-            fi
-      
-            sleep 30
-          done
-      
+          xcrun notarytool submit "$ZIP_FILE" \
+            --apple-id "$NOTARIZE_APPLE_ID" \
+            --team-id "$DEVID_TEAM_ID" \
+            --password "$NOTARIZE_APP_PASSWORD" \
+            --verbose \
+            --wait
+
           echo "Stapling the notarization ticket..."
           xcrun stapler staple "$APP_DIR"
         env:
