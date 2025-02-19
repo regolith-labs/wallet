@@ -69,7 +69,61 @@ jobs:
           CARGO_BUILD_TARGET=x86_64-apple-darwin \
             dx bundle --platform desktop --package-types macos --release
 
-      # 8) Configure AWS credentials
+      # 8) Import Developer ID Certificate
+      - name: Import Developer ID cert
+        run: |
+          # Decode the Base64-encoded P12
+          echo "$DEVID_CERT_BASE64" | base64 --decode > developer_id.p12
+
+          # Create & unlock a temporary keychain (no password)
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+
+          # Import the p12 into the keychain
+          security import developer_id.p12 -k ~/Library/Keychains/build.keychain -P "$DEVID_CERT_PASSWORD" -T /usr/bin/codesign
+
+          # Allow codesign to use this key without prompting
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" ~/Library/Keychains/build.keychain
+        env:
+          DEVID_CERT_BASE64: ${{ secrets.DEVID_CERT_BASE64 }}
+          DEVID_CERT_PASSWORD: ${{ secrets.DEVID_CERT_PASSWORD }}
+
+      # 9) Sign the .app
+      - name: Code-sign .app
+        run: |
+          APP_DIR="/Users/runner/work/wallet/wallet/target/dx/wallet/bundle/macos/bundle/macos/Wallet.app"
+          codesign --deep --force --verify --verbose \
+            --sign "Developer ID Application: $DEVID_NAME ($DEVID_TEAM_ID)" \
+            "$APP_DIR"
+        env:
+          DEVID_NAME: ${{ secrets.DEVID_NAME }}
+          DEVID_TEAM_ID: ${{ secrets.DEVID_TEAM_ID }}
+
+      # 10) Notarize the signed .app
+      - name: Notarize app
+        run: |
+          APP_DIR="/Users/runner/work/wallet/wallet/target/dx/wallet/bundle/macos/bundle/macos/Wallet.app"
+          ZIP_FILE="Wallet_${{ env.VERSION }}.app.zip"
+
+          # Zip the .app for submission
+          /usr/bin/zip -r "$ZIP_FILE" "$APP_DIR"
+
+          # Submit to Apple Notary Service (using xcrun notarytool).
+          xcrun notarytool submit "$ZIP_FILE" \
+            --apple-id "$NOTARIZE_APPLE_ID" \
+            --team-id "$DEVID_TEAM_ID" \
+            --password "$NOTARIZE_APP_PASSWORD" \
+            --wait
+
+          # Staple the notarization ticket
+          xcrun stapler staple "$APP_DIR"
+        env:
+          NOTARIZE_APPLE_ID: ${{ secrets.NOTARIZE_APPLE_ID }}
+          NOTARIZE_APP_PASSWORD: ${{ secrets.NOTARIZE_APP_PASSWORD }}
+          DEVID_TEAM_ID: ${{ secrets.DEVID_TEAM_ID }}
+
+      # 11) Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
@@ -77,23 +131,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 9) Create tar.gz from the .app folder & upload to S3
+      # 12) Create tar.gz from the notarized .app folder & upload to S3
       - name: Package and Upload
         run: |
-          # Path to the .app bundle created by 'dx bundle'
           APP_DIR="/Users/runner/work/wallet/wallet/target/dx/wallet/bundle/macos/bundle/macos/Wallet.app"
+          TAR_FILE="Wallet_${{ env.VERSION }}.app.tar.gz"
 
-          # Create a tar.gz archive of the .app directory
-          tar -czf "Wallet_${{ env.VERSION }}.app.tar.gz" \
-            -C "$(dirname "$APP_DIR")" \
-            "$(basename "$APP_DIR")"
+          tar -czf "$TAR_FILE" -C "$(dirname "$APP_DIR")" "$(basename "$APP_DIR")"
 
-          # Upload that single tar.gz file to S3
+          # Upload to S3
           aws s3 cp \
-            "Wallet_${{ env.VERSION }}.app.tar.gz" \
+            "$TAR_FILE" \
             "s3://${{ env.S3_BUCKET_NAME }}/${{ env.TARGET }}/${{ env.ARCH }}/${{ env.VERSION }}/wallet_${{ env.VERSION }}_x64.app.tar.gz"
 
-      # 10) Print S3 download link
+      # 13) Print S3 download link
       - name: Print S3 download link
         run: |
           echo "Download macOS artifact at:"
