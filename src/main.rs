@@ -10,7 +10,7 @@ mod updater;
 
 use dioxus::prelude::*;
 use signer::Multisig;
-use solana_sdk::{signature::Keypair, signer::Signer};
+use solana_sdk::signer::Signer;
 use updater::Updater;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
